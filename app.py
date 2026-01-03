@@ -17,7 +17,7 @@ if 'dark_mode' not in st.session_state:
     st.session_state.dark_mode = True
 
 if 'show_all_repos' not in st.session_state:
-    st.session_state.show_all_repos = False
+    st.session_state.show_all_repos = True
 
 # ---------------- CUSTOM CSS WITH ANIMATIONS ----------------
 def get_theme_colors():
@@ -488,6 +488,8 @@ with col1:
         </ul>
     </div>
     """, unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
 
 with col2:
     st.markdown("""
@@ -501,6 +503,8 @@ with col2:
         </ul>
     </div>
     """, unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
 
 with col3:
     st.markdown("""
@@ -514,6 +518,8 @@ with col3:
         </ul>
     </div>
     """, unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
 
 st.markdown("---")
 
