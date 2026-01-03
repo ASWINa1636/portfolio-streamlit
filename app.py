@@ -17,7 +17,7 @@ if 'dark_mode' not in st.session_state:
     st.session_state.dark_mode = True
 
 if 'show_all_repos' not in st.session_state:
-    st.session_state.show_all_repos = True
+    st.session_state.show_all_repos = False
 
 # ---------------- CUSTOM CSS WITH ANIMATIONS ----------------
 def get_theme_colors():
@@ -390,16 +390,29 @@ def fetch_github_repos(username="ASWINa1636", max_repos=None):
             "per_page": max_repos if max_repos else 100,  # Get all repos if max_repos is None
             "type": "owner"
         }
-        response = requests.get(url, params=params, timeout=10)
+        headers = {
+            "Accept": "application/vnd.github.v3+json",
+            "User-Agent": "Mozilla/5.0"
+        }
+        response = requests.get(url, params=params,headers=headers, timeout=15)
         
         if response.status_code == 200:
             repos = response.json()
-            return repos
+            return repos, None
+        elif response.status_code == 403:
+            return None, "GitHub API rate limit exceeded. Please try again later."
+        elif response.status_code == 404:
+            return None, "GitHub user not found. Please check the username."
         else:
-            return None
+            return None, f"GitHub API returned status code: {response.status_code}"
+            
+    except requests.exceptions.Timeout:
+        return None, "Request timed out. Please check your internet connection."
+    except requests.exceptions.ConnectionError:
+        return None, "Connection error. Please check your internet connection."
     except Exception as e:
-        st.error(f"Error fetching GitHub repos: {e}")
-        return None
+        return None, f"Error: {str(e)}"
+
 
 def format_date(date_string):
     """Format GitHub date to readable format"""
@@ -414,7 +427,7 @@ def format_date(date_string):
 with st.sidebar:
     try:
         img = Image.open("assets/profile.png")
-        st.image(img, width=150)
+        st.image(img, width=180)
     except:
         st.image("https://via.placeholder.com/180/2ECC71/FFFFFF?text=AA", width=180)
     
@@ -530,9 +543,19 @@ st.markdown("*Automatically fetched from GitHub*")
 
 # Determine how many repos to show
 repos_to_display = 6 if not st.session_state.show_all_repos else None
+result = fetch_github_repos(max_repos=repos_to_display)
 github_repos = fetch_github_repos(max_repos=repos_to_display)
 
-if github_repos:
+# Unpack the result
+if result:
+    github_repos, error_message = result
+else:
+    github_repos, error_message = None, "Unable to fetch repositories"
+   # Display repos in grid with better spacing
+if error_message:
+    st.warning(f"⚠️ {error_message}")
+    st.info("💡 **Tip:** You can manually add your GitHub projects or try refreshing the page.")
+elif github_repos and len(github_repos) > 0:
     # Display repos in grid with better spacing
     for i in range(0, len(github_repos), 3):
         cols = st.columns(3)
@@ -572,12 +595,12 @@ if github_repos:
             if st.button("📂 Show All Projects", use_container_width=True, key="show_more"):
                 st.session_state.show_all_repos = True
                 st.rerun()
-        else:
+        elif st.session_state.show_all_repos:
             if st.button("📁 Show Less", use_container_width=True, key="show_less"):
                 st.session_state.show_all_repos = False
                 st.rerun()
 else:
-    st.warning("⚠️ Unable to fetch GitHub repositories at the moment. Please check back later.")
+    st.info("📭 No repositories found or user has no public repositories.")
 
 
 st.markdown("---")
